@@ -1,0 +1,164 @@
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema
+# Continuous integration (CI) triggers cause a build to run whenever a push is made to the specified branches
+# or a specified tag is pushed.
+# YAML builds are configured by default with a CI trigger on all branches.
+trigger:
+  batch: "false"
+  branches:
+    include:
+    - master
+    - develop
+  paths:
+    exclude:
+    - README.md
+    - docs
+
+# A pull request will not trigger a build
+pr: none
+
+# If your pipeline has templates in another repository, you must let the system know about that repository.
+# The repository resource lets you specify an external repository.
+# In this case "self" means "the repository that the YAML file is in". Though it
+# should not be necessary.
+resources:
+  repositories:
+    - repository: self
+
+variables:
+- group: vars
+- name: LinuxPoolName
+  value: 'ubuntu-16.04'
+- name: WinPoolName
+  value: 'vs2017-win2016'
+- name: terraformstoragerg
+  value: 'terraformrg'
+- name: terraformstorageaccount
+  value: 'terraformstoragestv22f79'
+- name: tfstoragecontainername
+  value: 'terraform'
+- name: serviceConnection
+  value: 'ans_sc'
+- name: storagekey
+  value: 'willbefetchedbyscript'
+- name: tf_key
+  value: 'terraform.tfstate'
+- name: tf_container_name
+  value: 'terraform'
+- name: resource_location
+  value: 'eastus'
+- name: system.debug
+  value: 'false'
+
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:
+  - job: Build
+    displayName: Build job
+    pool:
+      vmImage: $(LinuxPoolName)
+    steps:
+    - task: CopyFiles@2
+      displayName: 'Copy Terraform files to artifacts'
+      inputs:
+        SourceFolder: terraform
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/Terraform'
+
+    # Running this token replacement here has the TF files with updated variables published into the pipeline under
+    # version control. But we don't want the Storage Key (secret) sat in the Pipeline, so we extract it with a
+    # script then re-run a Replace Tokens task in the Deploy stage. This doesn't have to be done here, it could be
+    # done during Deploy, prior to TF tasks. But it's nice to have a versioned artifact to check and make sure the
+    # token replacements happened as predicted.
+    - task: replacetokens@3
+      displayName: 'Replace tokens in **/*.tf'
+      inputs:
+        targetFiles: '$(Build.ArtifactStagingDirectory)/Terraform/*.tf'
+        escapeType: none
+        tokenPrefix: '__'
+        tokenSuffix: '__'
+
+    - task: CopyFiles@2
+      displayName: 'Copy Scripts to artifacts'
+      inputs:
+        SourceFolder: scripts
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/scripts'
+
+    - publish: $(Build.ArtifactStagingDirectory)
+      artifact: drop
+
+- stage: Provision
+  jobs:
+    # track deployments on the environment
+  - job: 'Provision'
+    pool:
+      vmImage: $(LinuxPoolName)
+    # creates an environment if it doesn’t exist
+    steps:
+    - download: current
+      artifact: drop
+
+    # the following script will create an Azure resource group, Storage account and Storage container which will be used to store terraform remote state
+    - task: AzureCLI@1
+      displayName: 'Provision Storage for TF State'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        scriptLocation: 'scriptPath'
+        scriptPath: '$(Pipeline.Workspace)/drop/scripts/Create-TerraformStateStorage.sh'
+
+- stage: Deploy
+  jobs:
+    # track deployments on the environment
+  - job: 'Deploy'
+    pool:
+      vmImage: $(WinPoolName)
+    # creates an environment if it doesn’t exist
+    steps:
+    - download: current
+      artifact: drop
+
+    # This calls a script to get the Terraform Storage Key and update the Pipeline variable with the result.
+    # Since Pipeline variable defaults (as set at the top) are re-applied in each Stage, we need to run this script
+    # in the same Stage as the Token Replace task that applies to the TF files, or it will instead add the default,
+    # 'willbefetchedbyscript' to the TF files, which will then be unable to access the storage, causing a fail.
+    - task: AzurePowerShell@4
+      displayName: 'Get TF State Storage Key'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        ScriptType: 'FilePath'
+        ScriptPath: '$(Pipeline.Workspace)/drop/scripts/Get-StorageKey.ps1'
+        azurePowerShellVersion: 'latestVersion'
+
+    - task: replacetokens@3
+      displayName: 'Replace TF State StorageKey'
+      inputs:
+        targetFiles: '$(Pipeline.Workspace)/drop/Terraform/*.tf'
+        escapeType: none
+        tokenPrefix: '##'
+        tokenSuffix: '##'
+
+    - task: Terraform@2
+      displayName: 'Terraform Init'
+      inputs:
+        TemplatePath: '$(Pipeline.Workspace)/drop/Terraform'
+        Arguments: 'init'
+        InstallTerraform: true
+        UseAzureSub: true
+        ConnectedServiceNameARM: $(serviceConnection)
+
+    # - task: Terraform@2
+    #   displayName: 'Terraform Plan'
+    #   inputs:
+    #     TemplatePath: '$(Pipeline.Workspace)/drop/Terraform'
+    #     Arguments: 'plan'
+    #     InstallTerraform: true
+    #     UseAzureSub: true
+    #     ConnectedServiceNameARM: $(serviceConnection)
+
+    - task: Terraform@2
+      displayName: 'Terraform Apply -auto-approve'
+      inputs:
+        TemplatePath: '$(Pipeline.Workspace)/drop/Terraform'
+        Arguments: 'apply -auto-approve'
+        InstallTerraform: true
+        UseAzureSub: true
+        ConnectedServiceNameARM: $(serviceConnection)

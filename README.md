@@ -1,5 +1,7 @@
 # terraform-ansible-vms
 
+### Goals
+
  - [ ] Deploy 3 windows server VMs and 1 Linux VM with Terraform
  - [ ] Configure the Linux VM as an Ansible jump server
  - [ ] Set up and configure 2 DCs and 1 Member Server using Ansible

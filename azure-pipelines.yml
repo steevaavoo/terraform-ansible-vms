@@ -33,7 +33,7 @@ variables:
 - name: terraformstoragerg
   value: 'terraformrg'
 - name: terraformstorageaccount
-  value: 'terraformstoragestv22f79'
+  value: 'terraformstoragestv22g79'
 - name: tfstoragecontainername
   value: 'terraform'
 - name: serviceConnection

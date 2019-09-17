@@ -40,6 +40,10 @@ variables:
   value: 'ans_sc'
 - name: storagekey
   value: 'willbefetchedbyscript'
+- name: ansvmrgname
+  value: 'stvRG1'
+- name: ClientID
+  value: 'http://tfm-ans-spn'
 - name: tf_key
   value: 'terraform.tfstate'
 - name: tf_container_name

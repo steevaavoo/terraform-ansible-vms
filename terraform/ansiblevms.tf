@@ -69,15 +69,15 @@ resource "azurerm_network_interface" "jumpvmintnic" {
   name                = "${var.prefix}-jumpIntNic"
   location            = "${azurerm_resource_group.smbrg.location}"
   resource_group_name = "${azurerm_resource_group.smbrg.name}"
-  # When creating multiple NICs, one must be set as Primary - also should be the first listed in
-  # "network_interface_ids" below under "azurerm_virtual_machine"
-  primary = true
   # network_security_group_id = "${TO BE CONFIGURED?}"
 
   ip_configuration {
     name                          = "jumpVmIntIpConfig"
     subnet_id                     = "${azurerm_subnet.smbsubnet.id}"
     private_ip_address_allocation = "Dynamic"
+    # When creating multiple NICs, one must be set as Primary - also should be the first listed in
+    # "network_interface_ids" below under "azurerm_virtual_machine"
+    primary = true
   }
 
   tags = {

@@ -75,9 +75,6 @@ resource "azurerm_network_interface" "jumpvmintnic" {
     name                          = "jumpVmIntIpConfig"
     subnet_id                     = "${azurerm_subnet.smbsubnet.id}"
     private_ip_address_allocation = "Dynamic"
-    # When creating multiple NICs, one must be set as Primary - also should be the first listed in
-    # "network_interface_ids" below under "azurerm_virtual_machine"
-    primary = true
   }
 
   tags = {
@@ -96,6 +93,9 @@ resource "azurerm_network_interface" "jumpvmpubnic" {
     subnet_id                     = "${azurerm_subnet.smbsubnet.id}"
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = "${azurerm_public_ip.smbpublicip.id}"
+    # When creating multiple NICs, one must be set as Primary - also should be defined as "primary_network_interface_id"
+    # in "azurerm_virtual_machine" below.
+    primary = true
   }
 
   tags = {
@@ -109,7 +109,7 @@ resource "azurerm_virtual_machine" "jumpvm" {
   resource_group_name   = "${azurerm_resource_group.smbrg.name}"
   network_interface_ids = ["${azurerm_network_interface.jumpvmintnic.id}", "${azurerm_network_interface.jumpvmpubnic.id}", ]
   # If multiple NICs assigned here, the same as below must be defined as Primary in resource creation above
-  primary_network_interface_id = "${azurerm_network_interface.jumpvmintnic.id}"
+  primary_network_interface_id = "${azurerm_network_interface.jumpvmpubnic.id}"
   vm_size                      = "${var.agent_pool_profile_vm_size}"
 
   # Uncomment this line to delete the OS disk automatically when deleting the VM

@@ -52,6 +52,8 @@ variables:
   value: 'eastus'
 - name: system.debug
   value: 'false'
+- name: jump_public_ip_address
+  value: '0.0.0.0'
 
 stages:
 - stage: Build
@@ -166,3 +168,14 @@ stages:
         InstallTerraform: true
         UseAzureSub: true
         ConnectedServiceNameARM: $(serviceConnection)
+
+    - task: terraform-outputs@0
+      inputs:
+        workingDirectory: '$(Pipeline.Workspace)/drop/Terraform'
+        mapSensitiveOutputsAsSecrets: false
+
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Output "##vso[task.logissue type=warning]Public IP = $env:jump_public_ip_address"

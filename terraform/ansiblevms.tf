@@ -69,6 +69,9 @@ resource "azurerm_network_interface" "jumpvmintnic" {
   name                = "${var.prefix}-jumpIntNic"
   location            = "${azurerm_resource_group.smbrg.location}"
   resource_group_name = "${azurerm_resource_group.smbrg.name}"
+  # When creating multiple NICs, one must be set as Primary - also should be the first listed in
+  # "network_interface_ids" below under "azurerm_virtual_machine"
+  primary = true
   # network_security_group_id = "${TO BE CONFIGURED?}"
 
   ip_configuration {
@@ -104,6 +107,7 @@ resource "azurerm_virtual_machine" "jumpvm" {
   name                = "${var.prefix}-jumpvm"
   location            = "${azurerm_resource_group.smbrg.location}"
   resource_group_name = "${azurerm_resource_group.smbrg.name}"
+  # If multiple NICs assigned here, the first in this list must be defined as Primary in resource creation above
   network_interface_ids = [
     "${azurerm_network_interface.jumpvmintnic.id}",
     "${azurerm_network_interface.jumpvmpubnic.id}",

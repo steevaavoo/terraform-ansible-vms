@@ -147,3 +147,11 @@ resource "azurerm_virtual_machine" "jumpvm" {
     environment = "smb ansible"
   }
 }
+
+data "azurerm_public_ip" "smbpublicip" {
+  name                = "${azurerm_public_ip.smbpublicip.name}"
+  resource_group_name = "${azurerm_virtual_machine.jumpvm.resource_group_name}"
+}
+output "jump_public_ip_address" {
+  value = "${data.azurerm_public_ip.smbpublicip.ip_address}"
+}

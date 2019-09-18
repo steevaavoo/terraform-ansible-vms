@@ -9,46 +9,106 @@ terraform {
     access_key = "##storagekey##"
   }
 }
-# creating resource group for VMs
+# Creating resource group for VMs
 resource "azurerm_resource_group" "smbrg" {
   name     = "${var.azure_resourcegroup_name}"
   location = "${var.location}"
 }
 
 # Provisioning Ansible Jump VM
-
+# Creating virtual network
 resource "azurerm_virtual_network" "smbvnet" {
   name                = "${var.prefix}-network"
   address_space       = ["10.0.0.0/16"]
   location            = "${azurerm_resource_group.smbrg.location}"
   resource_group_name = "${azurerm_resource_group.smbrg.name}"
 }
-
+# Creating virtual subnet "internal" within above network
 resource "azurerm_subnet" "internal" {
   name                 = "internal"
   resource_group_name  = "${azurerm_resource_group.smbrg.name}"
   virtual_network_name = "${azurerm_virtual_network.smbvnet.name}"
   address_prefix       = "10.0.2.0/24"
 }
+# Creating a Public IP
+resource "azurerm_public_ip" "smbpublicip" {
+  name                = "ansPublicIP"
+  location            = "${azurerm_resource_group.smbrg.location}"
+  resource_group_name = "${azurerm_resource_group.smbrg.name}"
+  allocation_method   = "Dynamic"
 
-resource "azurerm_network_interface" "jumpvm" {
-  name                = "${var.prefix}-jumpnic"
+  tags = {
+    environment = "smb ansible"
+  }
+}
+# Creating network security group to expose SSH on Ansible Jump Box
+resource "azurerm_network_security_group" "smbnsg" {
+  name                = "ansNetworkSecurityGroup"
   location            = "${azurerm_resource_group.smbrg.location}"
   resource_group_name = "${azurerm_resource_group.smbrg.name}"
 
-  ip_configuration {
-    name                          = "jumpvmipconfig"
-    subnet_id                     = "${azurerm_subnet.internal.id}"
-    private_ip_address_allocation = "Dynamic"
+  security_rule {
+    name                       = "SSH"
+    priority                   = 1001
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  tags = {
+    environment = "smb ansible"
   }
 }
 
+# Creating a Virtual NIC and connecting to the above internal subnet (need to think about NSG for this?)
+resource "azurerm_network_interface" "jumpvmintnic" {
+  name                = "${var.prefix}-jumpIntNic"
+  location            = "${azurerm_resource_group.smbrg.location}"
+  resource_group_name = "${azurerm_resource_group.smbrg.name}"
+  # network_security_group_id = "${TO BE CONFIGURED?}"
+
+  ip_configuration {
+    name                          = "jumpVmIntIpConfig"
+    subnet_id                     = "${azurerm_subnet.internal.id}"
+    private_ip_address_allocation = "Dynamic"
+  }
+
+  tags = {
+    environment = "smb ansible"
+  }
+}
+# Creating an additional Virtual NIC and connecting to the above Public IP
+resource "azurerm_network_interface" "jumpvmpubnic" {
+  name                      = "${var.prefix}-jumpPubNic"
+  location                  = "${azurerm_resource_group.smbrg.location}"
+  resource_group_name       = "${azurerm_resource_group.smbrg.name}"
+  network_security_group_id = "${azurerm_network_security_group.smbnsg.id}"
+
+  ip_configuration {
+    name                          = "jumpVmPubIpConfig"
+    subnet_id                     = "${azurerm_subnet.ansPublicIP.id}"
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = "${azurerm_public_ip.smbpublicip.id}"
+  }
+
+  tags = {
+    environment = "smb ansible"
+  }
+}
+# Creating a Jump VM and connecting it to the above resources.
 resource "azurerm_virtual_machine" "jumpvm" {
-  name                  = "${var.prefix}-jumpvm"
-  location              = "${azurerm_resource_group.smbrg.location}"
-  resource_group_name   = "${azurerm_resource_group.smbrg.name}"
-  network_interface_ids = ["${azurerm_network_interface.jumpvm.id}"]
-  vm_size               = "${var.agent_pool_profile_vm_size}"
+  name                = "${var.prefix}-jumpvm"
+  location            = "${azurerm_resource_group.smbrg.location}"
+  resource_group_name = "${azurerm_resource_group.smbrg.name}"
+  network_interface_ids = [
+    "${azurerm_network_interface.jumpvmintnic.id}",
+    "${azurerm_network_interface.jumpvmpubnic.id}",
+  ]
+  vm_size = "${var.agent_pool_profile_vm_size}"
 
   # Uncomment this line to delete the OS disk automatically when deleting the VM
   delete_os_disk_on_termination = true
@@ -79,6 +139,6 @@ resource "azurerm_virtual_machine" "jumpvm" {
     disable_password_authentication = false
   }
   tags = {
-    environment = "production"
+    environment = "smb ansible"
   }
 }

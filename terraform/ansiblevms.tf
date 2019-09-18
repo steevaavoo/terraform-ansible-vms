@@ -65,22 +65,23 @@ resource "azurerm_network_security_group" "smbnsg" {
 }
 
 # Creating a Virtual NIC and connecting to the above subnet (need to think about NSG for this?)
-resource "azurerm_network_interface" "jumpvmintnic" {
-  name                = "${var.prefix}-jumpIntNic"
-  location            = "${azurerm_resource_group.smbrg.location}"
-  resource_group_name = "${azurerm_resource_group.smbrg.name}"
-  # network_security_group_id = "${TO BE CONFIGURED?}"
+# resource "azurerm_network_interface" "jumpvmintnic" {
+#   name                = "${var.prefix}-jumpIntNic"
+#   location            = "${azurerm_resource_group.smbrg.location}"
+#   resource_group_name = "${azurerm_resource_group.smbrg.name}"
+#   # network_security_group_id = "${TO BE CONFIGURED?}"
 
-  ip_configuration {
-    name                          = "jumpVmIntIpConfig"
-    subnet_id                     = "${azurerm_subnet.smbsubnet.id}"
-    private_ip_address_allocation = "Dynamic"
-  }
+#   ip_configuration {
+#     name                          = "jumpVmIntIpConfig"
+#     subnet_id                     = "${azurerm_subnet.smbsubnet.id}"
+#     private_ip_address_allocation = "Dynamic"
+#   }
 
-  tags = {
-    environment = "smb ansible"
-  }
-}
+#   tags = {
+#     environment = "smb ansible"
+#   }
+# }
+
 # Creating an additional Virtual NIC and connecting to the above Public IP
 resource "azurerm_network_interface" "jumpvmpubnic" {
   name                      = "${var.prefix}-jumpPubNic"
@@ -95,7 +96,7 @@ resource "azurerm_network_interface" "jumpvmpubnic" {
     public_ip_address_id          = "${azurerm_public_ip.smbpublicip.id}"
     # When creating multiple NICs, one must be set as Primary - also should be defined as "primary_network_interface_id"
     # in "azurerm_virtual_machine" below.
-    primary = true
+    # primary = true
   }
 
   tags = {
@@ -104,13 +105,15 @@ resource "azurerm_network_interface" "jumpvmpubnic" {
 }
 # Creating a Jump VM and connecting it to the above resources.
 resource "azurerm_virtual_machine" "jumpvm" {
-  name                  = "${var.prefix}-jumpvm"
-  location              = "${azurerm_resource_group.smbrg.location}"
-  resource_group_name   = "${azurerm_resource_group.smbrg.name}"
-  network_interface_ids = ["${azurerm_network_interface.jumpvmintnic.id}", "${azurerm_network_interface.jumpvmpubnic.id}", ]
+  name                = "${var.prefix}-jumpvm"
+  location            = "${azurerm_resource_group.smbrg.location}"
+  resource_group_name = "${azurerm_resource_group.smbrg.name}"
+  network_interface_ids = [
+    #"${azurerm_network_interface.jumpvmintnic.id}", <-- may not be required.
+  "${azurerm_network_interface.jumpvmpubnic.id}"]
   # If multiple NICs assigned here, the same as below must be defined as Primary in resource creation above
-  primary_network_interface_id = "${azurerm_network_interface.jumpvmpubnic.id}"
-  vm_size                      = "${var.agent_pool_profile_vm_size}"
+  # primary_network_interface_id = "${azurerm_network_interface.jumpvmpubnic.id}"
+  vm_size = "${var.agent_pool_profile_vm_size}"
 
   # Uncomment this line to delete the OS disk automatically when deleting the VM
   delete_os_disk_on_termination = true

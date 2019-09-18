@@ -73,7 +73,7 @@ resource "azurerm_network_interface" "jumpvmintnic" {
 
   ip_configuration {
     name                          = "jumpVmIntIpConfig"
-    subnet_id                     = "${azurerm_subnet.smbSubnet.id}"
+    subnet_id                     = "${azurerm_subnet.smbsubnet.id}"
     private_ip_address_allocation = "Dynamic"
   }
 

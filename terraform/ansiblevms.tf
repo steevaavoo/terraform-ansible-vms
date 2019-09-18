@@ -23,9 +23,9 @@ resource "azurerm_virtual_network" "smbvnet" {
   location            = "${azurerm_resource_group.smbrg.location}"
   resource_group_name = "${azurerm_resource_group.smbrg.name}"
 }
-# Creating virtual subnet "internal" within above network
-resource "azurerm_subnet" "internal" {
-  name                 = "internal"
+# Creating virtual subnet "smbSubnet" within above network
+resource "azurerm_subnet" "smbsubnet" {
+  name                 = "smbSubnet"
   resource_group_name  = "${azurerm_resource_group.smbrg.name}"
   virtual_network_name = "${azurerm_virtual_network.smbvnet.name}"
   address_prefix       = "10.0.2.0/24"
@@ -64,7 +64,7 @@ resource "azurerm_network_security_group" "smbnsg" {
   }
 }
 
-# Creating a Virtual NIC and connecting to the above internal subnet (need to think about NSG for this?)
+# Creating a Virtual NIC and connecting to the above subnet (need to think about NSG for this?)
 resource "azurerm_network_interface" "jumpvmintnic" {
   name                = "${var.prefix}-jumpIntNic"
   location            = "${azurerm_resource_group.smbrg.location}"
@@ -73,7 +73,7 @@ resource "azurerm_network_interface" "jumpvmintnic" {
 
   ip_configuration {
     name                          = "jumpVmIntIpConfig"
-    subnet_id                     = "${azurerm_subnet.internal.id}"
+    subnet_id                     = "${azurerm_subnet.smbSubnet.id}"
     private_ip_address_allocation = "Dynamic"
   }
 
@@ -90,7 +90,7 @@ resource "azurerm_network_interface" "jumpvmpubnic" {
 
   ip_configuration {
     name                          = "jumpVmPubIpConfig"
-    subnet_id                     = "${azurerm_subnet.ansPublicIP.id}"
+    subnet_id                     = "${azurerm_subnet.smbsubnet.id}"
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = "${azurerm_public_ip.smbpublicip.id}"
   }

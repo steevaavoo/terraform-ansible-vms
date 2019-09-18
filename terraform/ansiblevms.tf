@@ -108,11 +108,8 @@ resource "azurerm_virtual_machine" "jumpvm" {
   location            = "${azurerm_resource_group.smbrg.location}"
   resource_group_name = "${azurerm_resource_group.smbrg.name}"
   # If multiple NICs assigned here, the first in this list must be defined as Primary in resource creation above
-  network_interface_ids = [
-    "${azurerm_network_interface.jumpvmintnic.id}",
-    "${azurerm_network_interface.jumpvmpubnic.id}",
-  ]
-  vm_size = "${var.agent_pool_profile_vm_size}"
+  network_interface_ids = ["${azurerm_network_interface.jumpvmintnic.id}", "${azurerm_network_interface.jumpvmpubnic.id}", ]
+  vm_size               = "${var.agent_pool_profile_vm_size}"
 
   # Uncomment this line to delete the OS disk automatically when deleting the VM
   delete_os_disk_on_termination = true

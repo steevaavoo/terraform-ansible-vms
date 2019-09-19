@@ -51,7 +51,7 @@ variables:
 - name: resource_location
   value: 'eastus'
 - name: system.debug
-  value: 'false'
+  value: 'true'
 - name: jump_public_ip_address
   value: '0.0.0.0'
 
@@ -71,10 +71,11 @@ stages:
         TargetFolder: '$(Build.ArtifactStagingDirectory)/Terraform'
 
     # Running this token replacement here has the TF files with updated variables published into the pipeline under
-    # version control. But we don't want the Storage Key (secret) sat in the Pipeline, so we extract it with a
-    # script then re-run a Replace Tokens task in the Deploy stage. This doesn't have to be done here, it could be
-    # done during Deploy, prior to TF tasks. But it's nice to have a versioned artifact to check and make sure the
-    # token replacements happened as predicted.
+    # version control. But we don't want secrets sat in the Pipeline, so we extract them with a script or store
+    # in variable group securely then re-run a Replace Tokens task in the Deploy stage. This doesn't have to be done
+    # here, it could be done during Deploy, prior to TF tasks. But it's nice to have a versioned artifact to check
+    # and make sure thevtoken replacements happened as predicted.
+
     - task: replacetokens@3
       displayName: 'Replace tokens in **/*.tf'
       inputs:
@@ -169,10 +170,11 @@ stages:
         UseAzureSub: true
         ConnectedServiceNameARM: $(serviceConnection)
 
-    - task: terraform-outputs@0
-      inputs:
-        workingDirectory: '$(Pipeline.Workspace)/drop/Terraform'
-        mapSensitiveOutputsAsSecrets: false
+    # Need the path to the Terraform binary. Run with debug enabled to discover it.
+    # - task: terraform-outputs@0
+    #   inputs:
+    #     workingDirectory: '$(Pipeline.Workspace)/drop/Terraform'
+    #     mapSensitiveOutputsAsSecrets: false
 
     - task: PowerShell@2
       inputs:

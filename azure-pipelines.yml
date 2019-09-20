@@ -170,11 +170,11 @@ stages:
         UseAzureSub: true
         ConnectedServiceNameARM: $(serviceConnection)
 
-    # Need the path to the Terraform binary. Run with debug enabled to discover it.
-    # - task: terraform-outputs@0
-    #   inputs:
-    #     workingDirectory: '$(Pipeline.Workspace)/drop/Terraform'
-    #     mapSensitiveOutputsAsSecrets: false
+    - task: terraform-outputs@0
+      inputs:
+        workingDirectory: '$(Pipeline.Workspace)/drop/Terraform'
+        mapSensitiveOutputsAsSecrets: false
+        pathToTerraform: 'c:\terraform-download'
 
     - task: PowerShell@2
       inputs:

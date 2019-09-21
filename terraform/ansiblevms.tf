@@ -165,3 +165,34 @@ data "azurerm_public_ip" "smbpublicip" {
 output "jump_public_ip_address" {
   value = "${data.azurerm_public_ip.smbpublicip.ip_address}"
 }
+
+resource "null_resource" "init" {
+  # Define connection
+  connection {
+    type        = "ssh"
+    host        = "${data.azurerm_public_ip.smbpublicip.ip_address}"
+    user        = "${var.admin_username}"
+    private_key = "${var.private_ssh_key}"
+  }
+
+  # Upload and run script(s)
+  provisioner "remote-exec" {
+    scripts = [
+      "scripts/Install-Ansible.sh"
+    ]
+  }
+
+  # Run inline code
+  provisioner "remote-exec" {
+    inline = [
+      "whoami",
+      "hostname",
+      "which pip",
+      "pip -V",
+      "which ansible",
+      "ansible --version"
+    ]
+  }
+
+  depends_on = ["azurerm_public_ip.smbpublicip", "azurerm_virtual_machine.jumpvm"]
+}

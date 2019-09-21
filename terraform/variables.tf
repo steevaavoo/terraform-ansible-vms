@@ -18,6 +18,10 @@ variable "public_ssh_key" {
   default = "__public_ssh_key__"
 }
 
+variable "private_ssh_key" {
+  default = "__private_ssh_key__"
+}
+
 variable "location" {
   default = "East US"
 }

@@ -128,21 +128,31 @@ resource "azurerm_virtual_machine" "jumpvm" {
     sku       = "16.04-LTS"
     version   = "latest"
   }
+
   storage_os_disk {
     name              = "jumpvmdisk1"
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
   }
+
   os_profile {
     computer_name  = "ansible"
-    admin_username = "ansible"
+    admin_username = "${var.admin_username}"
     # Create this variable in AzDo
-    admin_password = "##jumpvmadminpassword##"
+    # admin_password = "##jumpvmadminpassword##"
   }
+
   os_profile_linux_config {
-    disable_password_authentication = false
+    disable_password_authentication = true
+
+    ssh_keys {
+      # Path is instructing where to store the key_data
+      path     = "/home/${var.admin_username}/.ssh/authorized_keys"
+      key_data = "${var.public_ssh_key}"
+    }
   }
+
   tags = {
     environment = "smb ansible"
   }

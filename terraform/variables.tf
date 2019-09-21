@@ -6,12 +6,16 @@ variable "acr_admin_enabled" {
   default = false
 }
 
-variable "acr_sku" {
-  default = "Basic"
+variable "admin_username" {
+  default = "ansible"
 }
 
 variable "azure_resourcegroup_name" {
   default = "__ansvmrgname__"
+}
+
+variable "public_ssh_key" {
+  default = "__public_ssh_key__"
 }
 
 variable "location" {

@@ -180,7 +180,7 @@ resource "null_resource" "init" {
     host        = "${data.azurerm_public_ip.smbpublicip.ip_address}"
     user        = "${var.admin_username}"
     private_key = "${file("d:/a/_temp/id_rsa")}"
-    agent       = "false"
+    agent       = "true"
   }
 
   # Upload and run script(s)

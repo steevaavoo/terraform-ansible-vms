@@ -178,7 +178,7 @@ resource "null_resource" "init" {
   # Upload and run script(s)
   provisioner "remote-exec" {
     scripts = [
-      "scripts/Install-Ansible.sh"
+      "../scripts/Install-Ansible.sh"
     ]
   }
 

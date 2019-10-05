@@ -148,7 +148,7 @@ stages:
     # Downloading SSH Private Key to Agent
     - task: DownloadSecureFile@1
       name: private_key
-      displayName: 'Download CA certificate'
+      displayName: 'Download SSH Key'
       inputs:
         secureFile: 'id_rsa'
 

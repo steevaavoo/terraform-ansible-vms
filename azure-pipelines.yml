@@ -56,6 +56,8 @@ variables:
   value: 'true'
 - name: jump_public_ip_address
   value: '0.0.0.0'
+- name: TF_LOG
+  value: DEBUG
 
 stages:
 - stage: Build

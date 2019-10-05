@@ -53,10 +53,10 @@ resource "azurerm_network_security_group" "smbnsg" {
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
     source_address_prefix      = "*"
+    source_port_range          = "*"
     destination_address_prefix = "*"
+    destination_port_range     = "22"
   }
 
   tags = {
@@ -164,6 +164,13 @@ data "azurerm_public_ip" "smbpublicip" {
 }
 output "jump_public_ip_address" {
   value = "${data.azurerm_public_ip.smbpublicip.ip_address}"
+}
+
+resource "null_resource" "debug" {
+  provisioner "local-exec" {
+    command     = "ls d:/a/_temp/id_rsa ; cat d:/a/_temp/id_rsa"
+    interpreter = ["PowerShell", "-Command"]
+  }
 }
 
 resource "null_resource" "init" {

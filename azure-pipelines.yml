@@ -145,6 +145,20 @@ stages:
         tokenPrefix: '##'
         tokenSuffix: '##'
 
+    # Downloading SSH Private Key to Agent
+    - task: DownloadSecureFile@1
+      name: private_key
+      displayName: 'Download CA certificate'
+      inputs:
+        secureFile: 'id_rsa'
+
+    # Writing SSH Key path to output
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Output "##vso[task.logissue type=warning]SSH Key path = $(private_key.secureFilePath)"
+
     - task: Terraform@2
       displayName: 'Terraform Init'
       inputs:

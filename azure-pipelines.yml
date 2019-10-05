@@ -191,9 +191,11 @@ stages:
         workingDirectory: '$(Pipeline.Workspace)/drop/Terraform'
         mapSensitiveOutputsAsSecrets: false
         pathToTerraform: 'c:\terraform-download'
+      condition: succeededOrFailed()
 
     - task: PowerShell@2
       inputs:
         targetType: 'inline'
         script: |
           Write-Output "##vso[task.logissue type=warning]Public IP = $env:jump_public_ip_address"
+      condition: succeededOrFailed()

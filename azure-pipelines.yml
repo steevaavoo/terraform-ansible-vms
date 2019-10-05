@@ -152,12 +152,12 @@ stages:
       inputs:
         secureFile: 'id_rsa'
 
-    # Writing SSH Key path to output
-    - task: PowerShell@2
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Output "##vso[task.logissue type=warning]SSH Key path = $(private_key.secureFilePath)"
+    # # Writing SSH Key path to output - not needed, maybe use as env var to do token replace instead?
+    # - task: PowerShell@2
+    #   inputs:
+    #     targetType: 'inline'
+    #     script: |
+    #       Write-Output "##vso[task.logissue type=warning]SSH Key path = $(private_key.secureFilePath)"
 
     - task: Terraform@2
       displayName: 'Terraform Init'

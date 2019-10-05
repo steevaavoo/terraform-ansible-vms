@@ -202,5 +202,5 @@ resource "null_resource" "init" {
     ]
   }
 
-  depends_on = ["azurerm_public_ip.smbpublicip", "azurerm_virtual_machine.jumpvm"]
+  depends_on = ["azurerm_public_ip.smbpublicip", "azurerm_virtual_machine.jumpvm", "null_resource.debug"]
 }
